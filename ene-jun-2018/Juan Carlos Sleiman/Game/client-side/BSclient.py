@@ -1,36 +1,170 @@
-#!/usr/bin/env python
-#importamos el modulo para trabajar con sockets
-import socket
+
+from socket import *
+import time
+from _thread import *
 from random import randint
 
-#Creamos un objeto socket para el servidor. Podemos dejarlo sin parametros pero si
-#quieren pueden pasarlos de la manera server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s = socket.socket()
+def ini():
+    host = input("Server Address: ")
+    port = int(input("Port: "))
+    return host, port
 
-#Nos conectamos al servidor con el metodo connect. Tiene dos parametros
+def crearSocket():
+    s = socket(AF_INET, SOCK_STREAM)
+    return s
 
-#El primero es la IP del servidor y el segundo el puerto de conexion
-# Para pruebas locales
-s.connect(("localhost", 8102))
-#192.168.1.x
+def conectarse (host, port, s):
+    s.connect((host, port))
+
+def intentoConexion(host, port, s):
+
+        while True:
+            print("\nTrying to connect to:", host + ":" + str(port))
+            try:
+                conectarse(host, port, s)
+                break
+            except:
+                print("There is no Server at:", host + ":" + str(port))
+                print("Trying again in 5 Seconds\n")
+                time.sleep(5)
+
+def enviar(s):
+
+    while True:
+
+        global exit
+
+        try:
+            msg = input("")
+            msg = jugador +": " + msg
+            if msg == jugador+": salir":
+                exit = True
+                msg = "The "+jugador+" Client is gone"
+                s.send(msg.encode("UTF-8"))
+                s.close
+                break
+            else:
+                s.send(msg.encode("UTF-8"))
+                start_new_thread(recibir,(s,))
 
 
-#Creamos un bucle para retener la conexion
-while True:
-    #Instanciamos una entrada de datos para que el cliente pueda enviar mensajes
+        except:
+            print("Something happend\n")
+            print("Trying in 5 seg")
+            time.sleep(5)
 
-    mensaje = input("Mensaje a enviar ").encode()
-    numero = input("Meteme un numerito ").encode()
-    #Con la instancia del objeto servidor (s) y el metodo send, enviamos el mensaje introducido
-    s.send(mensaje)
-    s.send(numero)
+def recibir(s):
+    while True:
 
-    #Si por alguna razon el mensaje es close cerramos la conexion
-    if mensaje == "close":
-        break
+        try:
+          reply = s.recv(2048)
+          print(reply.decode("UTF-8"))
+          break
 
-#Imprimimos la palabra Adios para cuando se cierre la conexion
-print("Buen juego, nos vemos!")
 
-#Cerramos la instancia del objeto servidor
-s.close()
+        except:
+            print("Cant recieve response\n")
+            print("Trying in 5 seg")
+            time.sleep(5)
+
+def recibirEspecial(s):
+    global jugador
+    jugador = s.recv(2048).decode("UTF-8")
+
+exit=False      # Si el jugador envia salir, exit se pone en true y el
+                # el programa termina
+jugador = ""
+
+def main():
+
+
+    host, port = ini()
+    s = crearSocket()
+    intentoConexion(host,port,s)
+    recibirEspecial(s)
+    print("\nConnection To Server Established!\nThe server is:", host+":"+str(port)+"\n")
+    #############CODIGO DEL JUEGO###################
+    n = 5
+    board = []
+
+    for x in range(n):
+        board.append(["O"] * n)
+
+    def print_board(board):
+        for row in board:
+            print((" ").join(row))
+
+    print("JUGUEMOS A 'ENCUENTRA MI BARCO'!")
+    jugador1=input('Nombre del jugador 1... ')
+    jugador2=input('Nombre del jugador 2... ')
+
+    print(str(n)+"x"+str(n))
+    print("El tablero empieza con 0,0 hasta "+str(n-1)+","+str(n-1))
+    print("""
+    fila -> -
+    columna -> |
+    """)
+    print_board(board)
+
+    def random_row(board):
+        return randint(0, len(board) - 1)
+    def random_col(board):
+        return randint(0, len(board[0]) - 1)
+
+    ship_row = random_row(board)
+    ship_col = random_col(board)
+
+    for turn in range(1,1000):
+
+        if turn % 2 != 0:
+            print ("\nTurno", turn)
+            print("Turno de", jugador1 )
+            guess_row = int(input("\nAdivina la fila:"))
+            guess_col = int(input("Adivina la columna:"))
+            winner1 = True
+            winner2 = False
+
+        else:
+            print ("\nTurno", turn)
+            print("Turno de", jugador2 )
+            guess_row = int(input("\nAdivina la fila:"))
+            guess_col = int(input("Adivina la columna:"))
+            winner1 = False
+            winner2 = True
+
+        if guess_row == ship_row and guess_col == ship_col:
+            board[guess_row][guess_col] = "+"
+
+            if winner1:
+                print("\nFELICIDADES "+jugador1+" HUNDISTE MI BARCO QUE ESTABA EN " +str(ship_row)+","+str(ship_col)+"!")
+                print(jugador1+", ¡HAS GANADO EL JUEGO!")
+                print_board(board)
+                break
+            elif winner2:
+                print("\nFELICIDADES "+jugador2+" HUNDISTE MI BARCO QUE ESTABA EN " +str(ship_row)+","+str(ship_col)+"!")
+                print(jugador2+", ¡HAS GANADO EL JUEGO!")
+                break
+                print_board(board)
+
+        else:
+            if (guess_row < 0 or guess_row > n-1) or (guess_col < 0 or guess_col > n-1):
+                print("\nLo siento, eso ni estuvo en el oceano.")
+            elif(board[guess_row][guess_col] == "X"):
+                print("\nYa habías dicho ese.")
+            else:
+                print("\nFallaste mi barco!\n")
+                board[guess_row][guess_col] = "X"
+        turn =+ 1
+        print_board(board)
+    #############CODIGO DEL JUEGO###################
+    print("Write your messages\n")
+    start_new_thread(enviar,(s,))
+
+    while exit!=True:   # Necesarios para que los hilos no mueran
+        pass
+
+    print("\nSorry something went wrong! You have lost connection to the server.:(")
+    print("Closing the windows in 5 seg")
+    time.sleep(10)
+
+main()

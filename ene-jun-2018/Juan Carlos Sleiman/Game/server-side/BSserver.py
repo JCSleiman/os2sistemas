@@ -1,73 +1,127 @@
-#!/usr/bin/env python
+from socket import *
+from _thread import *
+import time
+import sys
 
-#importamos el modulo socket
-import socket
-from random import randint
+def ini():
+    host = input("Host: ")
+    port = int(input("Puerto: "))
+    return host, port
 
-jugador1=0
-jugador2=0
-n = 2
-board = []
+def crearSocket():
+    s = socket(AF_INET, SOCK_STREAM)
+    return s
 
-for x in range(n):
-    board.append(["O"] * n)
+def ligarSocket(s, host, port):
+    while True:
+        try:
+            s.bind((host, port))
+            break
 
-def print_board(board):
-    for row in board:
-        print((" ").join(row))
+        except error as e:
+            print("ERROR:", e)
 
-print("ESTE ES EL SERVIDOR DE SHIPSEEK!")
+def conexiones(s):
 
-print(str(n)+"x"+str(n))
-print("El tablero empieza con 0,0 hasta "+str(n-1)+","+str(n-1))
-print("""
-fila -> -
-columna -> |
-""")
-print_board(board)
+    conn, addr = s.accept()
+    print("\nConexión establecida.\nEl jugador es:", addr[0] + ":" + str(addr[1])+"\n")
+    return conn, addr
 
-def random_row(board):
-    return randint(0, len(board) - 1)
-def random_col(board):
-    return randint(0, len(board[0]) - 1)
+def enviar(conn):
 
-ship_row = random_row(board)
-ship_col = random_col(board)
+        msg = input("")
+        msg = "Servidor: " + msg
+        try:
 
-#instanciamos un objeto para trabajar con el socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            conn.send(msg.encode("UTF-8"))
 
-#Con el metodo bind le indicamos que puerto debe escuchar y de que servidor esperar conexiones
-#Es mejor dejarlo en blanco para recibir conexiones externas si es nuestro caso
-s.bind(("", 8102))
+        except:
+            print("\nAlgo ocurrió")
+            print("Intentandolo 5 seg\n")
+            time.sleep(5)
 
-#Aceptamos conexiones entrantes con el metodo listen, y ademas aplicamos como parametro
-#El numero de conexiones entrantes que vamos a aceptar
-s.listen(2)
+def enviar2(conn):
 
-#Instanciamos un objeto sc (socket cliente) para recibir datos, al recibir datos este
-#devolvera tambien un objeto que representa una tupla con los datos de conexion: IP y puerto
-sc, addr = s.accept()
+        msg = input("")
+        msg = "Servidor: " + msg
+        try:
 
-while True:
+            conn.send(msg.encode("UTF-8"))
 
-    #Recibimos el mensaje, con el metodo recv recibimos datos y como parametro
-    #la cantidad de bytes para recibir
-    recibido = sc.recv(1024)
-    jugador1 =sc.recv(jugador)
-    jugador2 = sc.recv(jugador)
+        except:
+            print("\nAlgo ocurrió")
+            print("Intentandolo en 5 seg\n")
+            time.sleep(5)
 
-    #Si el mensaje recibido es la palabra close se cierra la aplicacion
-    if recibido == "close":
-        break
+def recibir(conn):
+    while True:
+        global bandera
+        try:
+            reply = conn.recv(2048)
+            reply = reply.decode("UTF-8")
 
-    #Si se reciben datos nos muestra la IP y el mensaje recibido
-    print (str(addr) + " dice: ", recibido)
+            if reply[0] == "1":
+                print("Jugador", reply)
+                start_new_thread(enviar, (conn,))
 
-    #Devolvemos el mensaje al cliente
-    sc.send(recibido)
-print ("Adios.")
+            elif reply[0] == "2":
+                print("Jugador", reply)
+                start_new_thread(enviar2, (conn,))
 
-#Cerramos la instancia del socket cliente y servidor
-sc.close()
-s.close()
+            else:
+                lista_de_jugadores.append(reply[4])
+                print("\nEl jugador "+reply[4]+" se ha ido")
+                bandera = True
+                break
+
+
+
+        except:
+            print("\nNo recibo respuesta")
+            print("Intentandolo en 5 segs\n")
+            time.sleep(5)
+
+
+def enviarEspecial(conn):
+    global lista_de_jugadores,player
+    player = lista_de_jugadores.pop()
+    conn.send(player.encode("UTF-8"))
+
+bandera = False      # Utilizada en la desconexion/conexion de jugadores
+
+lista_de_jugadores = ["2","1"]   # El servidor le asigna un numero a los
+                                # jugadores segun esta lista
+
+player = ""     # Numero del playere
+
+def main():
+
+    global bandera
+    host,port = ini()
+    s = crearSocket()
+    ligarSocket(s, host,port)
+    s.listen(2)     # Espero 2 jugadores
+
+    print("\nEL SERVIDOR ES UN ESCLAVO "
+          "NO ESCRIBAS SI EL SERVIDOR NO TIENE NINGÚN MENSAJE A RESPONDER")
+    print("\nEsperando jugadores")
+
+    conn,addr = conexiones(s)
+    enviarEspecial(conn)               # Espero conexion del 1 playere
+    start_new_thread(recibir,(conn,))
+
+    conn2,addr2 = conexiones(s)
+    enviarEspecial(conn2)              # Espero conexion del 2 playere
+    start_new_thread(recibir,(conn2,))
+
+    while True: # Necesario para que los hilos no mueran
+
+        if bandera != True:     # En caso de desconectarse un playere,
+                                # esperara a que otro vuelve a conectarse
+            conn3,addr3 = conexiones(s)
+            enviarEspecial(conn3)
+            start_new_thread(recibir,(conn3,))
+            bandera = False
+
+
+main()

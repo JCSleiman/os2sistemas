@@ -3,14 +3,14 @@ La idea de este juego es el de crear una base de '0's mediante un arreglo de lis
 La generación del barco a buscar completamente aleatoria
 Objetivo:
 Gana el primero que descubra dónde se encuentra el barco
-Puede ser por turnos y simplemente tener un contador para saber cuántos turnos se
+Puede ser por turnos y simplemente tener un contador para saber cuánto tiempo se
 tardaron los jugadores en encontrar el barco
 Al ganador se le muestra un mensaje de WIN
 """
 from random import randint
+
 jugador1=0
 jugador2=0
-
 n = 2
 board = []
 
@@ -32,6 +32,11 @@ fila -> -
 columna -> |
 """)
 print_board(board)
+
+def random_row(board):
+    return randint(0, len(board) - 1)
+def random_col(board):
+    return randint(0, len(board[0]) - 1)
 
 ship_row = random_row(board)
 ship_col = random_col(board)
