@@ -19,13 +19,13 @@ def conectarse (host, port, s):
 def intentoConexion(host, port, s):
 
         while True:
-            print("\nTrying to connect to:", host + ":" + str(port))
+            print("\nIntentando conectarse a:", host + ":" + str(port))
             try:
                 conectarse(host, port, s)
                 break
             except:
-                print("There is no Server at:", host + ":" + str(port))
-                print("Trying again in 5 Seconds\n")
+                print("No hay un servidor en:", host + ":" + str(port))
+                print("Intentando en 5 segs\n")
                 time.sleep(5)
 
 def enviar(s):
@@ -39,7 +39,7 @@ def enviar(s):
             msg = jugador +": " + msg
             if msg == jugador+": salir":
                 exit = True
-                msg = "The "+jugador+" Client is gone"
+                msg = "El "+jugador+" Jugador se ha ido"
                 s.send(msg.encode("UTF-8"))
                 s.close
                 break
@@ -49,8 +49,8 @@ def enviar(s):
 
 
         except:
-            print("Something happend\n")
-            print("Trying in 5 seg")
+            print("Algo ocurrió\n")
+            print("Reintentando en 5 segs")
             time.sleep(5)
 
 def recibir(s):
@@ -63,8 +63,8 @@ def recibir(s):
 
 
         except:
-            print("Cant recieve response\n")
-            print("Trying in 5 seg")
+            print("No se puede recibir respuesta\n")
+            print("Reintentando en 5 segs")
             time.sleep(5)
 
 def recibirEspecial(s):
@@ -82,7 +82,7 @@ def main():
     s = crearSocket()
     intentoConexion(host,port,s)
     recibirEspecial(s)
-    print("\nConnection To Server Established!\nThe server is:", host+":"+str(port)+"\n")
+    print("\nConexión al servidor establecida!\nEl servidor es:", host+":"+str(port)+"\n")
     #############CODIGO DEL JUEGO###################
     n = 5
     board = []
@@ -157,14 +157,14 @@ def main():
         turn =+ 1
         print_board(board)
     #############CODIGO DEL JUEGO###################
-    print("Write your messages\n")
+    print("Escribe tus mensajes\n")
     start_new_thread(enviar,(s,))
 
     while exit!=True:   # Necesarios para que los hilos no mueran
         pass
 
-    print("\nSorry something went wrong! You have lost connection to the server.:(")
-    print("Closing the windows in 5 seg")
+    print("\nLo sentimos, algo salió mal! Has perdido la conexión al servidor.:(")
+    print("Cerrando las ventanas en 5 seg")
     time.sleep(10)
 
 main()
